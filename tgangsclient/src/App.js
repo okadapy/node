@@ -34,13 +34,11 @@ function App() {
     } else ctx.fillStyle = "darkred";
 
     ctx.fillRect(
-      x * (ctx.canvas.width / 20),
-      y * (ctx.canvas.width / 20),
+      x * Math.floor(ctx.canvas.width / 20),
+      y * Math.floor(ctx.canvas.width / 20),
       ctx.canvas.width / 20,
       ctx.canvas.width / 20
     );
-
-    renderGrid(ctx);
   };
 
   useEffect(() => {
@@ -51,28 +49,15 @@ function App() {
     const side = ctx.canvas.width / 20;
     renderGrid(ctx);
     canvas.addEventListener("mousedown", (e) => {
-      if (canPlacePixel == true) {
-        setCanPlacePixel(false);
-        const posx = Math.floor(e.offsetX / side),
-          posy = Math.floor(e.offsetY / side);
-        if (buffs.includes("bomb")) {
-          socket.send(
-            JSON.stringify({
-              type: "bomb",
-              x: posx,
-              y: posy,
-            })
-          );
-        } else {
-          socket.send(
-            JSON.stringify({
-              type: "newpixel",
-              x: posx,
-              y: posy,
-            })
-          );
-        }
-      }
+      const posx = Math.floor(e.offsetX / side),
+        posy = Math.floor(e.offsetY / side);
+      socket.send(
+        JSON.stringify({
+          type: "newpixel",
+          x: posx,
+          y: posy,
+        })
+      );
     });
 
     socket.onopen = () => {
@@ -85,22 +70,18 @@ function App() {
 
     socket.onmessage = (e) => {
       const data_json = JSON.parse(e.data);
-      if (data_json.type === "canclick") {
-        setCanPlacePixel(true);
-      } else if (data_json.type === "hasopponent") {
-        setHasOpponent(true);
-      } else if (data_json.type === "newpixel") {
-        renderNewPixel(ctx, data_json.x, data_json.y, data_json.player);
-        console.log("new pixel");
-      } else if (data_json.type === "clearpixel") {
-        renderNewPixel(ctx, data_json.x, data_json.y, null);
-      } else if (data_json.type === "found") {
-        if (data_json.value == "lightning") {
-          buffs.push({ lightning: 5 });
-        } else {
-          buffs.push(data_json.value);
-        }
+      if (data_json.type == "canclick") {
+      }
+      if (data_json.type == "update") {
+        console.log("Update recieved");
         console.log(data_json);
+        for (var y = 0; y < data_json.data.length; y++) {
+          for (var x = 0; x < data_json.data[y].length; x++) {
+            renderNewPixel(ctx, x, y, data_json.data[y][x].player);
+          }
+        }
+
+        renderGrid(ctx);
       }
     };
   }, []);
